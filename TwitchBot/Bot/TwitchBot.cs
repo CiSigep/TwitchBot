@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,18 +17,16 @@ namespace TwitchBot.Bot
         private CommandDictionary globalCommands;
         private IRCUtil irc;
         private MainForm mainform;
-        private TextBox console;
-        string botUsername;
+        private string botUsername;
         public bool Live { get; set; }
 
         public TwitchBot(string username, string oAuth, MainForm form)
         {
             irc = new IRCUtil("irc.twitch.tv", 6667, username, oAuth);
+            this.botUsername = username;
             channels = new Dictionary<string, CommandDictionary>();
             mainform = form;
-            console = mainform.Controls["LogBox"] as TextBox;
             Live = true;
-            joinChannel(username);
             globalCommands = new CommandDictionary("#GLOBAL#", irc);
             globalCommands["shutdown"] = new ShutdownCommand(this);
             botUsername = username;
@@ -70,13 +69,13 @@ namespace TwitchBot.Bot
             while (Live)
             {
                 IRCMessage msg = irc.receive();
-                if (msg.Username != null && !msg.Username.Equals(""))
+                if (msg.Username != null && !msg.Username.Equals(botUsername))
                 {
-                    ConsoleWrite(msg.Username + "@" + msg.Channel + ": " + msg.Message + "\r\n");
+                    mainform.ConsoleWrite(msg);
 
                     // Temporary if for testing purposes. Name is removed in GitHub Syncs
                     //TODO: remove all username references for git commits
-                    if (msg.Username.Equals("") && msg.Message.StartsWith("!"))
+                    if (msg.Username.ToLower().Equals(ConfigurationManager.AppSettings["admin"].ToLower()) && msg.Message.StartsWith("!"))
                         handleCommand(msg);
 
                 }
@@ -103,26 +102,14 @@ namespace TwitchBot.Bot
              
         }
 
-        public void handleInput(string input)
+        public void handleInput(string input, string channel)
         {
-            IRCMessage i = new IRCMessage(botUsername, "", input);
+            IRCMessage i = new IRCMessage(botUsername, channel, input);
 
-            ConsoleWrite(i.Username + "@" + i.Channel + ": " + i.Message + "\r\n");
+            mainform.ConsoleWrite(i);
 
-            irc.send("", input);
+            irc.send(channel, input);
         }
 
-        private void ConsoleWrite(string message) {
-            // Can't write in doWork thread, must invoke the UI to write to itself.
-            if (console.InvokeRequired)
-            {
-                console.Invoke(new Action<string>(ConsoleWrite), new object[] { message });
-                return;
-            }
-            else
-            {
-                console.Text += message;
-            }
-        }
     }
 }

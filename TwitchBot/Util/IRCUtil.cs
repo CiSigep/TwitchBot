@@ -43,10 +43,9 @@ namespace TwitchBot.Util
         public void leave(string name)
         {
             writer.WriteLine("PART #" + name);
+            writer.Flush();
             //channel = null;
         }
-
-        
 
         public IRCMessage receive() {
             string msg = reader.ReadLine();

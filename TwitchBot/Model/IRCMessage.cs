@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace TwitchBot.Model
 {
     
-    class IRCMessage
+    public class IRCMessage
     {
         public string Username { get; private set; }
         public string Message { get; private set; }

@@ -9,12 +9,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using TwitchBot.Bot;
+using TwitchBot.Model;
 
 namespace TwitchBot.Forms
 {
     public partial class MainForm : Form
     {
         private Bot.TwitchBot bot;
+        private string viewChannel;
         public MainForm(string user, string auth)
         {
             InitializeComponent();
@@ -41,8 +43,57 @@ namespace TwitchBot.Forms
         {
             if(ChatBox.Text.Length > 0)
             {
-                bot.handleInput(ChatBox.Text);
+                bot.handleInput(ChatBox.Text, channelBox.SelectedItem.ToString());
                 ChatBox.Clear();
+            }
+        }
+
+        private void connectButton_Click(object sender, EventArgs e)
+        {
+            if (channelText.Text.Length > 0 && !channelBox.Items.Contains(channelText.Text) && bot.joinChannel(channelText.Text))
+            {
+                channelBox.Items.Add(channelText.Text);
+                channelBox.SelectedItem = channelText.Text;
+                
+                channelBox.Enabled = true;
+                disconnectButton.Enabled = true;
+                viewChannel = channelBox.SelectedItem.ToString();
+                channelText.Text = "";
+            }
+        }
+
+        private void disconnectButton_Click(object sender, EventArgs e)
+        {
+            if (bot.leaveChannel(channelBox.SelectedItem.ToString())) {
+                channelBox.Items.Remove(channelBox.SelectedItem);
+
+                if (channelBox.Items.Count < 1)
+                {
+                    channelBox.Enabled = false;
+                    disconnectButton.Enabled = false;
+                }
+            }
+        }
+
+        private void channelBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            LogBox.Clear();
+            viewChannel = channelBox.SelectedIndex.ToString();
+        }
+
+        public void ConsoleWrite(IRCMessage message)
+        {
+            // Can't write in doWork thread, must invoke the UI to write to itself.
+            if (message.Channel.ToLower().Equals(viewChannel.ToLower())) {
+                if (LogBox.InvokeRequired)
+                {
+                    LogBox.Invoke(new Action<IRCMessage>(ConsoleWrite), new object[] { message });
+                    return;
+                }
+                else
+                {
+                    LogBox.Text += message.Username + ": " + message.Message + "\r\n";
+                } 
             }
         }
     }

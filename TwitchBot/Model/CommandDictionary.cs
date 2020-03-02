@@ -40,8 +40,7 @@ namespace TwitchBot.Model
         {
             //For now some dummy code
             commands = new Dictionary<string, ICommand>();
-            if(channelName.Equals(""))
-                commands.Add("testKappa", new BasicResponseCommand(util, "Kappa", Level.LEVEL_ADMIN));
+            commands.Add("testKappa", new BasicResponseCommand(util, "Kappa", Level.LEVEL_ADMIN));
         }
 
     }
